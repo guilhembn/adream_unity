@@ -1,17 +1,23 @@
 using UnityEngine;
+using UnityEngine.Networking;
 
 //[RequireComponent(typeof(Animator))]
 //[RequireComponent(typeof(ConfigurableJoint))]
 [RequireComponent(typeof(PlayerMotor))]
-public class PlayerController : MonoBehaviour {
+public class PlayerController : NetworkBehaviour{
 
 	[SerializeField]
 	private float speed = 5f;
 	[SerializeField]
 	private float lookSensitivity = 3f;
 
-	[SerializeField]
-	private LayerMask environmentMask;
+     [SerializeField]
+      private bool lockCursor = false;
+
+     [SerializeField]
+      private GameObject heartPrefab;
+     [SerializeField]
+      private Transform heartSpawn;
 
 	// Component caching
 	private PlayerMotor motor;
@@ -25,7 +31,7 @@ public class PlayerController : MonoBehaviour {
 	{
 
 
-		if (Cursor.lockState != CursorLockMode.Locked)
+		if (Cursor.lockState != CursorLockMode.Locked && lockCursor)
 		{
 			Cursor.lockState = CursorLockMode.Locked;
 		}
@@ -61,8 +67,31 @@ public class PlayerController : MonoBehaviour {
 		//Apply camera rotation
 		motor.RotateCamera(_cameraRotationX);
 
+           if (Input.GetKeyDown(KeyCode.Space))
+           {
+              CmdFire();
+           }
+
 
 	}
+     [Command]
+     void CmdFire()
+     {
+    // Create the Heart from the Heart Prefab
+    GameObject heart = (GameObject)Instantiate (
+        heartPrefab,
+        heartSpawn.position,
+        heartSpawn.rotation);
+
+    // Add velocity to the bullet
+    heart.GetComponent<Rigidbody>().velocity = heart.transform.forward * 6;
+
+   // Spawn the bullet on the Clients
+        NetworkServer.Spawn(heart);
+
+    // Destroy the bullet after 2 seconds
+    Destroy(heart, 2.0f);
+    }
 
 
 }
